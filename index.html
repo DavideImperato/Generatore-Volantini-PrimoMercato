@@ -68,11 +68,11 @@ textarea{resize:vertical}
 .in{position:absolute;inset:0;padding:6cqmin;display:flex;flex-direction:column;gap:3cqmin}
 .cat{position:absolute;top:5cqmin;left:5cqmin;z-index:1;background:#ffffffb3;color:var(--pd);font-weight:700;font-size:4.8cqmin;padding:1.2cqmin 3cqmin;border-radius:9cqmin}
 .im{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;margin-top:7cqmin}
-.im img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 .8cqmin 1.2cqmin #4F0E5233)}
+.im img{max-width:100%;max-height:100%;object-fit:contain;border-radius:5cqmin;filter:drop-shadow(0 .8cqmin 1.2cqmin #4F0E5233)}
 .tx{display:flex;flex-direction:column;gap:2cqmin;max-width:60%}
 .nm{margin:0;font-weight:700;font-size:7cqmin;line-height:1.15;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:var(--pd)}
 .cd{align-self:flex-start;background:#fff;color:var(--p);font-weight:700;font-size:4.4cqmin;padding:.8cqmin 2.6cqmin;border-radius:9cqmin}
-.old{font-size:5.4cqmin;opacity:.65}
+.nc .im{margin-top:0}.old{font-size:5.4cqmin;opacity:.65}
 .dc{position:absolute;top:4cqmin;right:4cqmin;width:17cqmin;height:17cqmin;border-radius:50%;background:var(--m);color:var(--pd);display:grid;place-items:center;font:700 5.4cqmin Fredoka,sans-serif;transform:rotate(8deg)}
 .pr{position:absolute;right:4cqmin;bottom:4cqmin;width:38cqmin;height:38cqmin;border-radius:50%;background:var(--y);color:var(--p);display:grid;place-items:center;font-family:Fredoka,sans-serif;font-weight:700}
 .pr span{display:flex;align-items:flex-start;line-height:1;padding-right:1cqmin}
@@ -138,6 +138,8 @@ textarea{resize:vertical}
       <label>Prodotti per pagina</label>
       <div class="sg"><button data-k="per" data-v="4">4</button><button data-k="per" data-v="6">6</button><button data-k="per" data-v="8">8</button><button data-k="per" data-v="12">12</button><button data-k="per" data-v="16">16</button><button data-k="per" data-v="20">20</button></div>
       <label class="sw"><input type="checkbox" data-k="group"> Raggruppa per categoria</label>
+      <label class="sw"><input type="checkbox" data-k="showCat"> Mostra categoria sui prodotti</label>
+      <label class="sw"><input type="checkbox" data-k="showPg"> Mostra numero di pagina</label>
     </section>
     <section class="f"><h4>Logo</h4>
       <div style="display:flex;align-items:center;gap:10px"><img id="lp" alt="" style="height:44px;max-width:140px;object-fit:contain;background:#F8F4FA;border-radius:8px;padding:4px"><label class="btn s" style="margin:0">Carica logo<input type="file" id="lf" accept="image/*" hidden></label><button class="btn s" id="lr">Ripristina</button></div>
@@ -196,7 +198,7 @@ const LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAADGCAYAAAAOj0FyAA
 const PH='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="32" y="30" width="36" height="58" rx="9" fill="#8A1C8C" opacity=".22"/><rect x="42" y="12" width="16" height="22" rx="4" fill="#8A1C8C" opacity=".22"/></svg>');
 const F={A4:[210,297],A3:[297,420],'50x70':[500,700],'70x100':[700,1000]},COLS={4:2,6:2,8:2,12:3,16:4,20:4};
 const TINT=['#FFF3A0','#CDEFE0','#EAD9F3','#FFD9EB'],DPER={A4:8,A3:12,'50x70':16,'70x100':16};
-const D={fmt:'A4',pages:0,per:8,group:true,logo:'',logoSize:100,qrWa:false,wa:'',qrWeb:false,title:'Offerte del mese',validity:'Dal 3 al 16 Novembre 2026',
+const D={fmt:'A4',pages:0,per:8,group:true,showCat:true,showPg:true,logo:'',logoSize:100,qrWa:false,wa:'',qrWeb:false,title:'Offerte del mese',validity:'Dal 3 al 16 Novembre 2026',
  address:'Corso Giuseppe Garibaldi 40, Portici (NA) · Tel. 081 607 5205',info:'Spedizione in 24/48h · Gratis da €100',site:'www.primomercato.it',
  legal:'Offerte valide fino a esaurimento scorte. I prezzi possono variare per errori tipografici o modifiche fiscali. Le foto sono indicative.'};
 const norm=p=>({id:p.id||String(Date.now()+Math.random()),title:p.title||'Prodotto',cat:p.cat||p.category||'Pulizia casa',reg:+(p.reg??p.regularPrice)||0,promo:+(p.promo??p.promoPrice)||0,cond:p.cond??p.condition??'',img:/placehold\.co/.test(p.img??p.image??'')?'':(p.img??p.image??'')});
@@ -209,14 +211,14 @@ const tint=c=>{let h=0;for(const ch of c)h=(h*31+ch.charCodeAt(0))%97;return TIN
 const eur=v=>v.toFixed(2).replace('.',',');
 
 const tile=p=>{const[a,b]=p.promo.toFixed(2).split('.'),has=p.reg>p.promo,d=has?Math.round((1-p.promo/p.reg)*100):0;
- return `<article class="t" style="--c:${tint(p.cat)}"><div class="in"><span class="cat">${esc(p.cat)}</span><div class="im"><img src="${esc(p.img||PH)}" alt=""></div><div class="tx"><h3 class="nm">${esc(p.title)}</h3>${p.cond?`<span class="cd">${esc(p.cond)}</span>`:''}${has?`<s class="old">€ ${eur(p.reg)}</s>`:''}</div></div>${d?`<span class="dc">-${d}%</span>`:''}<div class="pr"><span><small>€</small><b>${a}</b><sup>,${b}</sup></span></div></article>`};
+ return `<article class="t${cfg.showCat?'':' nc'}" style="--c:${tint(p.cat)}"><div class="in">${cfg.showCat?`<span class="cat">${esc(p.cat)}</span>`:''}<div class="im"><img src="${esc(p.img||PH)}" alt=""></div><div class="tx"><h3 class="nm">${esc(p.title)}</h3>${p.cond?`<span class="cd">${esc(p.cond)}</span>`:''}${has?`<s class="old">€ ${eur(p.reg)}</s>`:''}</div></div>${d?`<span class="dc">-${d}%</span>`:''}<div class="pr"><span><small>€</small><b>${a}</b><sup>,${b}</sup></span></div></article>`};
 const head=f=>`<header class="hd ${f?'bg':'sm'}"><svg class="bl" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M40 0C24 30 52 62 28 100H100V0Z"/></svg><i class="o1"></i><i class="o2"></i><img class="lg" style="--ls:${(+cfg.logoSize||100)/100}" src="${esc(cfg.logo||LOGO)}" alt="Primo Mercato"><div class="tt"><h2>${esc(cfg.title)}</h2><span class="pl">${esc(cfg.validity)}</span></div></header>`;
 function qr(text){if(typeof qrcode!='function'||!text)return'';try{const q=qrcode(0,'M');q.addData(text);q.make();const n=q.getModuleCount();let d='';for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))d+=`M${c} ${r}h1v1h-1z`;return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><path d="${d}" fill="#2A1330"/></svg>`}catch(e){return''}}
 const waUrl=()=>{let d=(cfg.wa||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.length==10&&d[0]=='3')d='39'+d;return d?'https://wa.me/'+d:''};
 const webUrl=()=>{const s=(cfg.site||'').trim();return s?(/^https?:\/\//i.test(s)?s:'https://'+s):''};
 const qrBox=(svg,a,b)=>svg?`<div class="qb"><div class="qc">${svg}</div><small><b>${esc(a)}</b></small></div>`:'';
 const foot=(i,n)=>{const q=(cfg.qrWa?qrBox(qr(waUrl()),'WhatsApp',cfg.wa):'')+(cfg.qrWeb?qrBox(qr(webUrl()),'Sito web',webUrl().replace(/^https?:\/\//i,'')):'');
- return `<footer class="ft"><div class="fl"><b class="site">${esc(cfg.site)}</b><div class="inf">${esc(cfg.address)}<br>${esc(cfg.info)}</div></div><div class="qrs">${q}</div><span class="pg">${i}/${n}</span><p class="lg2">${esc(cfg.legal)}</p></footer>`};
+ return `<footer class="ft"><div class="fl"><b class="site">${esc(cfg.site)}</b><div class="inf">${esc(cfg.address)}<br>${esc(cfg.info)}</div></div><div class="qrs">${q}</div>${cfg.showPg?`<span class="pg">${i}/${n}</span>`:''}<p class="lg2">${esc(cfg.legal)}</p></footer>`};
 
 function layout(){
  const[w,h]=F[cfg.fmt],a4=cfg.fmt=='A4',per=cfg.per,cols=COLS[per],rows=per/cols;
